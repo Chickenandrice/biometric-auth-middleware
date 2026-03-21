@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BioAuth — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="Primary">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <div class="brand-title">BioAuth</div>
+            <div class="brand-sub">Dashboard</div>
+          </div>
+        </div>
+        <nav class="nav">
+          <a class="nav-link active" href="#" data-view="overview">Overview</a>
+          <a class="nav-link" href="#" data-view="people">People</a>
+          <a class="nav-link" href="#" data-view="activity">Activity</a>
+          <a class="nav-link" href="#" data-view="settings">Settings</a>
+        </nav>
+        <div class="sidebar-footer">
+          <label class="field-label" for="api-base">API base URL</label>
+          <input
+            id="api-base"
+            class="input mono"
+            type="text"
+            spellcheck="false"
+            placeholder="http://localhost:8000"
+            autocomplete="off"
+          />
+          <label class="toggle">
+            <input id="use-mock" type="checkbox" checked />
+            <span>Use mock data (local)</span>
+          </label>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1 class="page-title" id="page-title">Overview</h1>
+            <p class="page-desc" id="page-desc">
+              Connect your API or use mock mode to explore the UI.
+            </p>
+          </div>
+          <div class="topbar-actions">
+            <span class="status-pill" id="conn-status">
+              <span class="status-dot"></span>
+              Mock data
+            </span>
+            <button type="button" class="btn btn-ghost" id="btn-refresh">
+              Refresh
+            </button>
+          </div>
+        </header>
+
+        <p class="flash flash-error hidden" id="flash-error" role="alert"></p>
+
+        <section class="view" id="view-overview" data-view-panel="overview">
+          <div class="stats" id="stat-cards"></div>
+          <div class="grid-2">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Auth attempts (24h)</h2>
+                <span class="panel-hint">Hourly buckets</span>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="chart-attempts" height="220"></canvas>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Outcome mix</h2>
+                <span class="panel-hint">Last 24 hours</span>
+              </div>
+              <div class="chart-wrap chart-wrap--donut">
+                <canvas id="chart-outcomes" height="220"></canvas>
+              </div>
+            </article>
+          </div>
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Recent events</h2>
+              <span class="panel-hint">Latest entries</span>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Device</th>
+                    <th>Result</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="events-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="view hidden" id="view-people" data-view-panel="people">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>People</h2>
+              <span class="panel-hint"
+                >Add users, then complete enrollment (pending → enrolled)</span
+              >
+            </div>
+            <div class="toolbar toolbar--split">
+              <button type="button" class="btn btn-primary" id="btn-add-user">
+                Add person
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th>Last auth</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="people-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="view hidden" id="view-activity" data-view-panel="activity">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Activity</h2>
+              <span class="panel-hint">Verification attempts</span>
+            </div>
+            <div class="toolbar">
+              <input
+                id="log-filter"
+                class="input"
+                type="search"
+                placeholder="Filter by user or device…"
+              />
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Device</th>
+                    <th>Channel</th>
+                    <th>Result</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="log-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="view hidden" id="view-settings" data-view-panel="settings">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Expected API (live mode)</h2>
+              <span class="panel-hint">Your backend should implement these</span>
+            </div>
+            <div class="settings-prose" id="settings-api"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div
+      class="modal hidden"
+      id="modal-add-user"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-add-title"
+    >
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card">
+        <h2 id="modal-add-title">Add person</h2>
+        <p class="modal-lead">
+          Creates a user in <strong>pending enrollment</strong>. Complete
+          enrollment after they register a device.
+        </p>
+        <form id="form-add-user">
+          <label class="field-label" for="inp-display-name">Display name</label>
+          <input
+            id="inp-display-name"
+            class="input"
+            name="display_name"
+            required
+            autocomplete="name"
+          />
+          <label class="field-label" for="inp-username">Username</label>
+          <input
+            id="inp-username"
+            class="input mono"
+            name="username"
+            required
+            autocomplete="username"
+          />
+          <label class="field-label" for="inp-email">Email (optional)</label>
+          <input
+            id="inp-email"
+            class="input"
+            name="email"
+            type="email"
+            autocomplete="email"
+          />
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" data-close-modal>
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="charts.js"></script>
+    <script src="dashboard.js"></script>
+  </body>
+</html>
