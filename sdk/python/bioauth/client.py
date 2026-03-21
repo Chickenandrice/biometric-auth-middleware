@@ -70,6 +70,12 @@ class BioAuthClient:
         resp.raise_for_status()
         return resp.json()
 
+    def delete_user(self, user_id: str) -> None:
+        resp = self._session.delete(
+            f"{self.base_url}/users/{user_id}", timeout=self.timeout
+        )
+        resp.raise_for_status()
+
     # ── Logs ──
 
     def list_logs(self, user_id: str | None = None, limit: int = 50) -> list[dict]:
@@ -91,6 +97,40 @@ class BioAuthClient:
 
     def status(self) -> dict:
         resp = self._session.get(f"{self.base_url}/status", timeout=self.timeout)
+        resp.raise_for_status()
+        return resp.json()
+
+    # ── BLE relay (same JSON as edge HTTP /capture) ──
+
+    def relay_enrollment(self, payload: dict) -> dict:
+        """POST full EnrollmentPayload dict from a BLE edge notification."""
+        resp = self._session.post(
+            f"{self.base_url}/relay/enrollment",
+            json=payload,
+            timeout=self.timeout,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def relay_authorize(
+        self,
+        user_id: str,
+        action: str,
+        verification: dict,
+        risk_level: str = "high",
+    ) -> dict:
+        """POST VerificationPayload under /relay/authorize (after reading from BLE)."""
+        body = {
+            "user_id": user_id,
+            "action": action,
+            "risk_level": risk_level,
+            "verification": verification,
+        }
+        resp = self._session.post(
+            f"{self.base_url}/relay/authorize",
+            json=body,
+            timeout=self.timeout,
+        )
         resp.raise_for_status()
         return resp.json()
 

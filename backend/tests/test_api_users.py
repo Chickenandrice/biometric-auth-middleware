@@ -63,3 +63,22 @@ class TestUsersAPI:
     async def test_create_user_missing_user_id(self, client):
         resp = await client.post("/users", json={}, headers=API_KEY_HEADER)
         assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_delete_user(self, client):
+        await client.post("/users", json={"user_id": "alice"}, headers=API_KEY_HEADER)
+        resp = await client.delete("/users/alice", headers=API_KEY_HEADER)
+        assert resp.status_code == 204
+        resp = await client.get("/users/alice", headers=API_KEY_HEADER)
+        assert resp.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_user_not_found(self, client):
+        resp = await client.delete("/users/ghost", headers=API_KEY_HEADER)
+        assert resp.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_user_requires_api_key(self, client):
+        await client.post("/users", json={"user_id": "alice"}, headers=API_KEY_HEADER)
+        resp = await client.delete("/users/alice")
+        assert resp.status_code == 401

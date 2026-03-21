@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.db.session import get_db
 from backend.app.db import crud
 from backend.app.schemas.user import UserCreate, UserOut
+from backend.app.services.vector_store_service import vector_store
 from backend.app.utils.security import verify_api_key
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -39,3 +40,16 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@router.delete("/{user_id}", status_code=204)
+async def delete_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    _api_key: str = Depends(verify_api_key),
+):
+    """Remove user, baseline row, and enrolled embedding (audit history is kept)."""
+    ok = await crud.delete_user(db, user_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="User not found")
+    vector_store.delete_embedding(user_id)

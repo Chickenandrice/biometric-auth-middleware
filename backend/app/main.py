@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.config import settings
 from backend.app.db.session import init_db
-from backend.app.api import authorize, enroll, users, logs, status
+from backend.app.api import authorize, enroll, users, logs, status, relay
 
 logging.basicConfig(level=logging.DEBUG if settings.debug else logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,3 +41,4 @@ app.include_router(enroll.router)
 app.include_router(users.router)
 app.include_router(logs.router)
 app.include_router(status.router)
+app.include_router(relay.router)

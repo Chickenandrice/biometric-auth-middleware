@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 import datetime
 
@@ -23,6 +23,17 @@ async def create_user(db: AsyncSession, user_id: str, display_name: str | None =
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def delete_user(db: AsyncSession, user_id: str) -> bool:
+    """Remove user row and baseline. Returns False if user did not exist."""
+    user = await get_user(db, user_id)
+    if not user:
+        return False
+    await db.execute(delete(Baseline).where(Baseline.user_id == user_id))
+    await db.execute(delete(User).where(User.user_id == user_id))
+    await db.commit()
+    return True
 
 
 async def set_user_enrolled(db: AsyncSession, user_id: str, enrolled: bool) -> User | None:
