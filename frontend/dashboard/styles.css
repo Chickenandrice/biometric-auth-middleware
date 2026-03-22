@@ -1,15 +1,15 @@
 :root {
-  --bg: #0c0f14;
-  --bg-panel: #151a24;
+  --bg: #0B0D12;
+  --bg-panel: #131620;
   --border: rgba(255, 255, 255, 0.08);
   --text: #e8ecf4;
   --muted: #8b95a8;
-  --accent: #3dd6c6;
-  --accent-dim: rgba(61, 214, 198, 0.15);
-  --warn: #f0b429;
-  --danger: #f07178;
-  --success: #7fd99a;
-  --font: "DM Sans", system-ui, sans-serif;
+  --accent: #6C8EEF;
+  --accent-dim: rgba(108, 142, 239, 0.15);
+  --warn: #EAB308;
+  --danger: #E05555;
+  --success: #34D399;
+  --font: "Inter", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --radius: 12px;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
@@ -69,7 +69,7 @@ a {
   border-radius: 10px;
   background: radial-gradient(
       circle at 30% 30%,
-      rgba(61, 214, 198, 0.9),
+      rgba(108, 142, 239, 0.9),
       transparent 55%
     ),
     linear-gradient(135deg, #1a2332, #0f141c);
@@ -160,8 +160,8 @@ a {
 
 .input:focus {
   outline: none;
-  border-color: rgba(61, 214, 198, 0.45);
-  box-shadow: 0 0 0 3px rgba(61, 214, 198, 0.12);
+  border-color: rgba(108, 142, 239, 0.45);
+  box-shadow: 0 0 0 3px rgba(108, 142, 239, 0.12);
 }
 
 .input.mono {
@@ -278,12 +278,12 @@ a {
   height: 8px;
   border-radius: 50%;
   background: var(--warn);
-  box-shadow: 0 0 12px rgba(240, 180, 41, 0.5);
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.5);
 }
 
 .status-pill.is-live .status-dot {
   background: var(--accent);
-  box-shadow: 0 0 12px rgba(61, 214, 198, 0.45);
+  box-shadow: 0 0 12px rgba(108, 142, 239, 0.45);
 }
 
 .btn {
@@ -311,13 +311,13 @@ a {
 }
 
 .btn-primary {
-  background: rgba(61, 214, 198, 0.18);
-  border-color: rgba(61, 214, 198, 0.35);
+  background: rgba(108, 142, 239, 0.18);
+  border-color: rgba(108, 142, 239, 0.35);
   color: var(--accent);
 }
 
 .btn-primary:hover {
-  background: rgba(61, 214, 198, 0.28);
+  background: rgba(108, 142, 239, 0.28);
 }
 
 .btn-sm {
@@ -326,7 +326,7 @@ a {
 }
 
 .btn-danger {
-  border-color: rgba(240, 113, 120, 0.35);
+  border-color: rgba(224, 85, 85, 0.35);
   color: var(--danger);
 }
 
@@ -338,9 +338,9 @@ a {
 }
 
 .flash-error {
-  background: rgba(240, 113, 120, 0.1);
-  border: 1px solid rgba(240, 113, 120, 0.25);
-  color: #f5a8ad;
+  background: rgba(224, 85, 85, 0.1);
+  border: 1px solid rgba(224, 85, 85, 0.25);
+  color: #E87777;
 }
 
 .flash.hidden {
@@ -383,11 +383,11 @@ a {
 }
 
 .stat-delta.positive {
-  color: rgba(127, 217, 154, 0.95);
+  color: rgba(52, 211, 153, 0.95);
 }
 
 .stat-delta.negative {
-  color: rgba(240, 113, 120, 0.95);
+  color: rgba(224, 85, 85, 0.95);
 }
 
 .grid-2 {
@@ -492,17 +492,17 @@ a {
 }
 
 .badge-ok {
-  background: rgba(127, 217, 154, 0.12);
+  background: rgba(52, 211, 153, 0.12);
   color: var(--success);
 }
 
 .badge-fail {
-  background: rgba(240, 113, 120, 0.12);
+  background: rgba(224, 85, 85, 0.12);
   color: var(--danger);
 }
 
 .badge-warn {
-  background: rgba(240, 180, 41, 0.12);
+  background: rgba(234, 179, 8, 0.12);
   color: var(--warn);
 }
 
@@ -557,8 +557,8 @@ select.input {
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
   border-radius: var(--radius);
-  border: 1px solid rgba(240, 180, 41, 0.35);
-  background: rgba(240, 180, 41, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  background: rgba(234, 179, 8, 0.08);
   font-size: 0.9rem;
 }
 
@@ -601,8 +601,8 @@ select.input {
 
 .ble-quick-pill.is-connected {
   color: var(--text);
-  border-color: rgba(61, 214, 198, 0.35);
-  background: rgba(61, 214, 198, 0.08);
+  border-color: rgba(108, 142, 239, 0.35);
+  background: rgba(108, 142, 239, 0.08);
 }
 
 .ble-quick-icon {
@@ -616,7 +616,7 @@ select.input {
 
 .ble-quick-pill.is-connected .ble-quick-icon {
   background: var(--accent);
-  box-shadow: 0 0 10px rgba(61, 214, 198, 0.45);
+  box-shadow: 0 0 10px rgba(108, 142, 239, 0.45);
 }
 
 #ble-quick-text {
@@ -696,8 +696,8 @@ select.input {
   margin: 1rem 0 0;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
-  border: 1px solid rgba(61, 214, 198, 0.28);
-  background: rgba(61, 214, 198, 0.08);
+  border: 1px solid rgba(108, 142, 239, 0.28);
+  background: rgba(108, 142, 239, 0.08);
   font-size: 0.88rem;
   color: var(--text);
   line-height: 1.5;
@@ -737,7 +737,7 @@ select.input {
 }
 
 .data-table tbody tr.tr--ble-target td {
-  background: rgba(61, 214, 198, 0.06);
+  background: rgba(108, 142, 239, 0.06);
 }
 
 .data-table tbody tr.tr--ble-target td:first-child {

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioAuth — Nuke Console</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0}
+    body{min-height:100vh;background:#0B0D12;color:#e8ecf4;font-family:'Inter',system-ui,sans-serif}
+
+    /* Brand */
+    .brand{position:fixed;top:0;left:0;padding:1rem 1.25rem;display:flex;align-items:center;gap:0.6rem}
+    .brand-icon{width:36px;height:36px;border-radius:9px;background:rgba(108,142,239,0.15);display:flex;align-items:center;justify-content:center}
+    .brand-icon svg{width:18px;height:18px;color:#6C8EEF}
+    .brand-text{font-weight:700;font-size:0.95rem;color:#6C8EEF}
+
+    /* Center */
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+
+    /* Card */
+    .card{width:100%;max-width:480px;padding:3rem 2.5rem;border-radius:16px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.025);text-align:center}
+
+    /* ECG icon */
+    .ecg-icon{width:72px;height:72px;margin:0 auto 1.5rem;border-radius:50%;border:1.5px solid rgba(108,142,239,0.25);display:flex;align-items:center;justify-content:center;color:#6C8EEF;transition:all .4s}
+    .ecg-icon svg{width:30px;height:30px}
+    .ecg-icon.granted{border-color:rgba(52,211,153,0.35);color:#34D399}
+    .ecg-icon.denied{border-color:rgba(224,85,85,0.35);color:#E05555}
+    .ecg-icon.scanning{animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(108,142,239,0.25)}50%{box-shadow:0 0 0 14px rgba(108,142,239,0)}}
+
+    h1{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
+    .subtitle{color:#8b95a8;font-size:0.88rem;margin-bottom:1.25rem}
+
+    /* Bar visualizer */
+    .bars{display:none;align-items:center;justify-content:center;gap:3px;height:32px;margin-bottom:1rem}
+    .bars.active{display:flex}
+    .bar{width:3px;background:#6C8EEF;border-radius:2px;animation:bar .8s ease-in-out infinite alternate}
+    .bar:nth-child(1){height:18px;animation-delay:0s}
+    .bar:nth-child(2){height:24px;animation-delay:.1s}
+    .bar:nth-child(3){height:14px;animation-delay:.2s}
+    .bar:nth-child(4){height:28px;animation-delay:.15s}
+    .bar:nth-child(5){height:10px;animation-delay:.25s}
+    .bar:nth-child(6){height:20px;animation-delay:.05s}
+    .bar:nth-child(7){height:8px;animation-delay:.3s}
+    .bar:nth-child(8){height:22px;animation-delay:.12s}
+    .bar:nth-child(9){height:16px;animation-delay:.22s}
+    .bar:nth-child(10){height:12px;animation-delay:.18s}
+    .bar:nth-child(11){height:26px;animation-delay:.08s}
+    .bar:nth-child(12){height:6px;animation-delay:.28s}
+    .bar:nth-child(13){height:18px;animation-delay:.13s}
+    .bar:nth-child(14){height:10px;animation-delay:.23s}
+    .bar:nth-child(15){height:22px;animation-delay:.06s}
+    @keyframes bar{to{height:4px;opacity:.3}}
+
+    /* Status label */
+    .status-label{font-size:0.75rem;font-weight:600;letter-spacing:0.1em;color:#6C8EEF;transition:color .3s}
+    .status-label:empty{display:none}
+    .status-label.granted{color:#34D399}
+    .status-label.denied{color:#E05555}
+
+    /* Button */
+    .btn{font-family:inherit;font-size:0.95rem;font-weight:600;padding:0.75rem 2rem;border-radius:10px;border:1px solid rgba(108,142,239,0.3);background:rgba(108,142,239,0.12);color:#6C8EEF;cursor:pointer;transition:all .2s;margin-top:1.5rem}
+    .btn:hover{background:rgba(108,142,239,0.2)}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .btn.hidden{display:none}
+
+    /* Result */
+    .result{margin-top:1.5rem;display:none;animation:fadeUp .4s ease}
+    .result.show{display:block}
+    .codes{font-family:'JetBrains Mono',monospace;font-size:0.9rem;color:#34D399;line-height:2;margin-bottom:0.75rem}
+    .meta{padding-top:0.65rem;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+    .meta span{font-size:0.76rem;color:#8b95a8}
+    .meta code{font-family:'JetBrains Mono',monospace;font-size:0.74rem;color:#6C8EEF}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M4 7h3l3-4 4 8 3-4h3"/>
+      </svg>
+    </div>
+    <span class="brand-text">BioAuth</span>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="ecg-icon" id="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3-6 4 12 3-6h4"/>
+        </svg>
+      </div>
+      <h1 id="title">Nuclear Launch Console</h1>
+      <p class="subtitle" id="subtitle">Requires live ECG biometric verification</p>
+      <div class="bars" id="bars">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+      <div class="status-label" id="status"></div>
+      <button class="btn" id="btn" onclick="launch()">Authenticate</button>
+      <div class="result" id="result">
+        <div class="codes" id="codes"></div>
+        <div class="meta" id="meta"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-6 4 12 3-6h4"/></svg>'
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
+const X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+
+async function launch(){
+  const btn=$('btn'),icon=$('icon'),bars=$('bars'),status=$('status'),result=$('result')
+  btn.classList.add('hidden'); result.className='result'
+  icon.className='ecg-icon scanning'; icon.innerHTML=LOCK
+  bars.className='bars active'
+
+  const phases=[['Connecting to sensor...','CONNECTING'],['Reading ECG biometric signal...','READING'],['Analyzing biometrics...','ANALYZING'],['Verifying identity...','AUTHENTICATING']]
+  for(const [sub,label] of phases){
+    $('title').textContent='Verifying Identity'
+    $('subtitle').textContent=sub
+    status.className='status-label'; status.textContent=label
+    await sleep(800+Math.random()*500)
+  }
+
+  try{
+    const res=await fetch('/launch',{method:'POST'})
+    if(!res.ok) throw new Error(res.status)
+    const d=await res.json(),b=d.bioauth
+    bars.className='bars'
+
+    $('meta').innerHTML=
+      `<span>Decision: <code>${b.decision}</code></span>`+
+      `<span>Confidence: <code>${(b.confidence*100).toFixed(0)}%</code></span>`+
+      `<span>Reason: <code>${(b.reasons||[]).join(', ')||'—'}</code></span>`
+
+    if(d.authorized){
+      icon.className='ecg-icon granted'; icon.innerHTML=CHECK
+      $('title').textContent='Access Granted'
+      $('subtitle').textContent='Identity confirmed — launch codes released'
+      status.className='status-label granted'; status.textContent='AUTHORIZED'
+      $('codes').innerHTML=d.codes.map(c=>`\u2622 ${c}`).join('<br>')
+      result.className='result show'
+    }else{
+      icon.className='ecg-icon denied'; icon.innerHTML=X
+      $('title').textContent='Access Denied'
+      $('subtitle').textContent='Biometric verification failed'
+      status.className='status-label denied'; status.textContent='DENIED'
+      $('codes').textContent=''
+      result.className='result show'
+    }
+  }catch(e){
+    bars.className='bars'
+    icon.className='ecg-icon denied'; icon.innerHTML=X
+    $('title').textContent='Access Denied'
+    $('subtitle').textContent='Could not reach BioAuth — is it running on :8000?'
+    status.className='status-label denied'; status.textContent='UNREACHABLE'
+  }
+  btn.classList.remove('hidden')
+}
+function $(id){return document.getElementById(id)}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+</script>
+</body>
+</html>

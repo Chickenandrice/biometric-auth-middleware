@@ -39,7 +39,8 @@ class EnrollmentService:
         if not user:
             user = await crud.create_user(db, user_id)
 
-        if payload.signal_quality < 0.5:
+        from backend.app.config import settings as _settings
+        if payload.signal_quality < _settings.signal_quality_threshold:
             return EnrollResponse(
                 user_id=user_id,
                 enrolled=False,

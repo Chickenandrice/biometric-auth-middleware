@@ -5,17 +5,29 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.config import settings
-from backend.app.db.session import init_db
+from backend.app.db.session import init_db, async_session
+from backend.app.dependencies import get_transport
 from backend.app.api import authorize, enroll, users, logs, status, relay
 
 logging.basicConfig(level=logging.DEBUG if settings.debug else logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+async def _auto_enroll_operator():
+    """In simulate mode, auto-enroll an 'operator' user so the demo works out of the box."""
+    from backend.app.services.enrollment_service import enrollment_service
+    transport = get_transport()
+    async with async_session() as db:
+        await enrollment_service.enroll_user("operator", transport, db)
+    logger.info("Simulate mode: auto-enrolled 'operator'")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s", settings.app_name)
     await init_db()
+    if settings.transport_mode == "simulate":
+        await _auto_enroll_operator()
     yield
     logger.info("Shutting down %s", settings.app_name)
 

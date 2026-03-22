@@ -46,10 +46,7 @@ class VectorStoreService:
 
     def delete_embedding(self, user_id: str):
         """Remove a user's enrollment embedding."""
-        try:
-            self._collection.delete(ids=[user_id])
-        except Exception:
-            pass
+        self._collection.delete(ids=[user_id])
 
     def query_similar(self, embedding: list[float], n_results: int = 1) -> list[dict]:
         """Query for the most similar enrolled embeddings."""
