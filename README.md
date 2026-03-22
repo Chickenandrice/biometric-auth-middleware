@@ -19,15 +19,19 @@ pip install -r requirements.txt
 # 2. Run backend in simulation mode (no hardware needed)
 BIOAUTH_TRANSPORT_MODE=simulate uvicorn backend.app.main:app --reload --port 8000
 
-# 3. Run the demo app (uses the Python SDK)
+# 3. Run the demo app (its server calls BioAuth via the Python SDK)
 uvicorn demo.server:app --port 9000
-# Then open http://localhost:9000
+# Open http://localhost:9000 — click Authenticate to test the full flow
 
 # 4. Open the admin dashboard (optional, static HTML)
 open frontend/dashboard/index.html
 ```
 
-Simulation mode auto-enrolls an "operator" user on startup so the demo works out of the box.
+Simulation mode auto-enrolls an "operator" user on startup so the demo works out of the box. Without it, the backend expects a real Raspberry Pi running the edge verifier:
+
+```bash
+uvicorn backend.app.main:app --reload --port 8000
+```
 
 ## Project structure
 
@@ -84,7 +88,7 @@ All endpoints require `X-API-Key` header (default: `dev-api-key-001`).
 | POST   | `/relay/enrollment` | BLE relay enrollment        |
 | POST   | `/relay/authorize`  | BLE relay authorization     |
 
-Full request/response docs: [`backend/BACKEND.md`](backend/BACKEND.md)
+Interactive docs available at `http://localhost:8000/docs` when the backend is running.
 
 ## Tests
 
