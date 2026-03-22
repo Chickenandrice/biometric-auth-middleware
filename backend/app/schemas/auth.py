@@ -22,3 +22,12 @@ class VerificationPayload(BaseModel):
     hrv: float
     signal_quality: float
     timestamp: str
+
+
+class RelayAuthorizeBody(BaseModel):
+    """Authorize using verification JSON relayed from a BLE client (admin dashboard or SDK)."""
+
+    user_id: str
+    action: str
+    risk_level: str = "high"
+    verification: VerificationPayload

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "./chroma_data"
 
     # Transport
-    transport_mode: str = "http"  # "http" or "bluetooth"
+    transport_mode: str = "simulate"  # "simulate", "http", or "bluetooth"
     edge_http_url: str = "http://localhost:8001"
     edge_bluetooth_address: str = ""
 

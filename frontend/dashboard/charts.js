@@ -2,10 +2,10 @@
   const palette = {
     grid: "rgba(255, 255, 255, 0.06)",
     text: "#8b95a8",
-    accentSoft: "rgba(61, 214, 198, 0.25)",
-    success: "#7fd99a",
-    danger: "#f07178",
-    warn: "#f0b429",
+    accentSoft: "rgba(108, 142, 239, 0.25)",
+    success: "#34D399",
+    danger: "#E05555",
+    warn: "#EAB308",
   };
 
   const defaultOpts = {
@@ -13,7 +13,7 @@
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        labels: { color: palette.text, font: { family: "'DM Sans', sans-serif" } },
+        labels: { color: palette.text, font: { family: "'Inter', sans-serif" } },
       },
     },
   };
@@ -45,7 +45,7 @@
             label: "Failure",
             data: failure,
             borderColor: palette.danger,
-            backgroundColor: "rgba(240, 113, 120, 0.08)",
+            backgroundColor: "rgba(224, 85, 85, 0.08)",
             fill: true,
             tension: 0.35,
             borderWidth: 2,
@@ -110,7 +110,7 @@
               color: palette.text,
               boxWidth: 10,
               padding: 14,
-              font: { family: "'DM Sans', sans-serif", size: 12 },
+              font: { family: "'Inter', sans-serif", size: 12 },
             },
           },
         },

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -22,11 +22,11 @@
             <div class="brand-sub">Dashboard</div>
           </div>
         </div>
-        <nav class="nav">
-          <a class="nav-link active" href="#" data-view="overview">Overview</a>
-          <a class="nav-link" href="#" data-view="people">People</a>
-          <a class="nav-link" href="#" data-view="activity">Activity</a>
-          <a class="nav-link" href="#" data-view="settings">Settings</a>
+        <nav class="nav nav--jump" aria-label="On this page">
+          <a class="nav-jump" href="#section-snapshot">Snapshot</a>
+          <a class="nav-jump" href="#section-enroll">Enroll</a>
+          <a class="nav-jump" href="#section-activity">Activity</a>
+          <a class="nav-jump" href="#section-api">API</a>
         </nav>
         <div class="sidebar-footer">
           <label class="field-label" for="api-base">API base URL</label>
@@ -38,6 +38,15 @@
             placeholder="http://localhost:8000"
             autocomplete="off"
           />
+          <label class="field-label" for="api-key">X-API-Key (live mode)</label>
+          <input
+            id="api-key"
+            class="input mono"
+            type="password"
+            spellcheck="false"
+            placeholder="dev-api-key-001"
+            autocomplete="off"
+          />
           <label class="toggle">
             <input id="use-mock" type="checkbox" checked />
             <span>Use mock data (local)</span>
@@ -45,12 +54,12 @@
         </div>
       </aside>
 
-      <main class="main">
+      <main class="main main--single">
         <header class="topbar">
           <div>
-            <h1 class="page-title" id="page-title">Overview</h1>
+            <h1 class="page-title" id="page-title">BioAuth</h1>
             <p class="page-desc" id="page-desc">
-              Connect your API or use mock mode to explore the UI.
+              Stats, enrollment, and activity — updates every 5 seconds.
             </p>
           </div>
           <div class="topbar-actions">
@@ -58,20 +67,26 @@
               <span class="status-dot"></span>
               Mock data
             </span>
-            <button type="button" class="btn btn-ghost" id="btn-refresh">
-              Refresh
-            </button>
+            <span
+              class="ble-quick-pill hidden"
+              id="ble-quick-pill"
+              title="Jump to enrollment"
+            >
+              <span class="ble-quick-icon" aria-hidden="true"></span>
+              <span id="ble-quick-text">Bluetooth</span>
+            </span>
           </div>
         </header>
 
         <p class="flash flash-error hidden" id="flash-error" role="alert"></p>
 
-        <section class="view" id="view-overview" data-view-panel="overview">
+        <section id="section-snapshot" class="dash-section section-anchor">
+          <h2 class="section-heading">Snapshot</h2>
           <div class="stats" id="stat-cards"></div>
           <div class="grid-2">
             <article class="panel">
               <div class="panel-head">
-                <h2>Auth attempts (24h)</h2>
+                <h3>Auth attempts (24h)</h3>
                 <span class="panel-hint">Hourly buckets</span>
               </div>
               <div class="chart-wrap">
@@ -80,7 +95,7 @@
             </article>
             <article class="panel">
               <div class="panel-head">
-                <h2>Outcome mix</h2>
+                <h3>Outcome mix</h3>
                 <span class="panel-hint">Last 24 hours</span>
               </div>
               <div class="chart-wrap chart-wrap--donut">
@@ -88,34 +103,140 @@
               </div>
             </article>
           </div>
-          <article class="panel">
-            <div class="panel-head">
-              <h2>Recent events</h2>
-              <span class="panel-hint">Latest entries</span>
-            </div>
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>User</th>
-                    <th>Device</th>
-                    <th>Result</th>
-                    <th>Score</th>
-                  </tr>
-                </thead>
-                <tbody id="events-body"></tbody>
-              </table>
-            </div>
-          </article>
         </section>
 
-        <section class="view hidden" id="view-people" data-view-panel="people">
-          <article class="panel">
+        <section id="section-enroll" class="dash-section section-anchor">
+          <h2 class="section-heading">Enrollment</h2>
+          <p class="ble-banner hidden" id="ble-unsupported">
+            Web Bluetooth is not available. Use Chrome or Edge on desktop with
+            <strong>HTTPS</strong> or <code class="inline-code">localhost</code>.
+          </p>
+          <p class="ble-mock-hint hidden" id="ble-mock-hint">
+            Turn off <strong>mock data</strong> and set API URL + API key to enroll
+            via Bluetooth.
+          </p>
+
+          <div class="grid-ble grid-ble--people">
+            <article class="panel ble-ios-panel">
+              <div class="ble-ios-head">
+                <div class="ble-ios-icon-wrap" aria-hidden="true">
+                  <svg class="ble-ios-icon" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M8.25 12.75L12 9l3.75 3.75M12 15V9"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M6.5 8.2c2.1-2.1 5.5-2.1 7.6 0l1.35 1.35M17.1 15.8c-2.1 2.1-5.5 2.1-7.6 0L8.15 14.45"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <div class="ble-ios-text">
+                  <div class="ble-ios-title">Enrollment device</div>
+                  <p class="ble-ios-one-liner">
+                    Connect once, pick someone below, then capture on the hardware
+                    — their sample is saved to enroll them.
+                  </p>
+                  <div class="ble-ios-sub" id="ble-line-status">Not connected</div>
+                  <div class="ble-ios-device mono-cell" id="ble-line-device">
+                    —
+                  </div>
+                </div>
+                <div class="ble-ios-actions">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="btn-ble-connect"
+                  >
+                    Connect
+                  </button>
+                  <button
+                    type="button"
+                    class="btn"
+                    id="btn-ble-disconnect"
+                    disabled
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+              <p
+                class="ble-enroll-banner hidden"
+                id="ble-enroll-banner"
+                role="status"
+              ></p>
+              <details class="ble-advanced">
+                <summary>Advanced — only if your device uses different BLE IDs</summary>
+                <p class="ble-lead ble-lead--tight">
+                  Most kits work with the defaults below. Change these only if
+                  your firmware uses other service or notify characteristic UUIDs.
+                </p>
+                <label class="field-label" for="inp-ble-name-prefix"
+                  >Name prefix (optional)</label
+                >
+                <input
+                  id="inp-ble-name-prefix"
+                  class="input mono"
+                  type="text"
+                  placeholder="BioAuth"
+                  spellcheck="false"
+                />
+                <label class="field-label" for="inp-ble-service"
+                  >Service UUID</label
+                >
+                <input
+                  id="inp-ble-service"
+                  class="input mono"
+                  type="text"
+                  spellcheck="false"
+                />
+                <label class="field-label" for="inp-ble-char"
+                  >Notify characteristic UUID</label
+                >
+                <input
+                  id="inp-ble-char"
+                  class="input mono"
+                  type="text"
+                  spellcheck="false"
+                />
+              </details>
+              <dl class="ble-meta">
+                <div>
+                  <dt>Samples received</dt>
+                  <dd id="ble-line-count">0</dd>
+                </div>
+                <div>
+                  <dt>Enrollments saved</dt>
+                  <dd id="ble-line-relay-ok">0</dd>
+                </div>
+              </dl>
+              <p class="ble-inline-error hidden" id="ble-last-error"></p>
+            </article>
+            <article class="panel ble-record-panel">
+              <div class="panel-head">
+                <h3>Recorded data</h3>
+                <span class="panel-hint">Last sample from the device</span>
+              </div>
+              <pre class="ble-json-out" id="ble-last-capture">—</pre>
+              <div class="panel-head ble-record-panel__sub">
+                <h3>Enrollment result</h3>
+                <span class="panel-hint">From your BioAuth server</span>
+              </div>
+              <pre class="ble-json-out ble-json-out--sub" id="ble-last-response">—</pre>
+            </article>
+          </div>
+
+          <article class="panel panel--people">
             <div class="panel-head">
-              <h2>People</h2>
+              <h3>People</h3>
               <span class="panel-hint"
-                >Add users, then complete enrollment (pending → enrolled)</span
+                >Add a person, tap <strong>Record enrollment</strong>, connect the
+                device, then capture on the hardware.</span
               >
             </div>
             <div class="toolbar toolbar--split">
@@ -128,7 +249,7 @@
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Username</th>
+                    <th>User ID</th>
                     <th>Status</th>
                     <th>Last auth</th>
                     <th></th>
@@ -140,11 +261,12 @@
           </article>
         </section>
 
-        <section class="view hidden" id="view-activity" data-view-panel="activity">
+        <section id="section-activity" class="dash-section section-anchor">
+          <h2 class="section-heading">Activity</h2>
           <article class="panel">
             <div class="panel-head">
-              <h2>Activity</h2>
-              <span class="panel-hint">Verification attempts</span>
+              <h3>Verification log</h3>
+              <span class="panel-hint">Filter by user or device</span>
             </div>
             <div class="toolbar">
               <input
@@ -166,21 +288,19 @@
                     <th>Score</th>
                   </tr>
                 </thead>
-                <tbody id="log-body"></tbody>
+                <tbody id="activity-body"></tbody>
               </table>
             </div>
           </article>
         </section>
 
-        <section class="view hidden" id="view-settings" data-view-panel="settings">
-          <article class="panel">
-            <div class="panel-head">
-              <h2>Expected API (live mode)</h2>
-              <span class="panel-hint">Your backend should implement these</span>
-            </div>
-            <div class="settings-prose" id="settings-api"></div>
-          </article>
-        </section>
+        <details
+          class="dash-section api-details section-anchor"
+          id="section-api"
+        >
+          <summary>API reference (live mode)</summary>
+          <div class="settings-prose api-details__body" id="settings-api"></div>
+        </details>
       </main>
     </div>
 
@@ -207,7 +327,7 @@
             required
             autocomplete="name"
           />
-          <label class="field-label" for="inp-username">Username</label>
+          <label class="field-label" for="inp-username">User ID</label>
           <input
             id="inp-username"
             class="input mono"
