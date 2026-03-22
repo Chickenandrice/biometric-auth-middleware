@@ -75,6 +75,20 @@ class TestLogsAPI:
         assert "reason_codes" in log
 
     @pytest.mark.asyncio
+    async def test_logs_not_enrolled_denial_recorded(self, client):
+        await client.post(
+            "/authorize",
+            json={"user_id": "ghost", "action": "launch_nukes", "risk_level": "critical"},
+            headers=API_KEY_HEADER,
+        )
+        resp = await client.get("/logs", headers=API_KEY_HEADER)
+        logs = resp.json()
+        assert len(logs) >= 1
+        assert logs[0]["user_id"] == "ghost"
+        assert logs[0]["decision"] == "deny"
+        assert "NOT_ENROLLED" in (logs[0].get("reason_codes") or [])
+
+    @pytest.mark.asyncio
     async def test_logs_requires_api_key(self, client):
         resp = await client.get("/logs")
         assert resp.status_code == 401

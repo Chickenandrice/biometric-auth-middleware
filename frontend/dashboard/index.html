@@ -353,6 +353,24 @@
       </div>
     </div>
 
+    <!-- When served from the Nuke demo (:9000), /demo-config pre-fills live gateway prefs before dashboard.js runs. -->
+    <script>
+      (function () {
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/demo-config", false);
+          xhr.send(null);
+          if (xhr.status === 200) {
+            var cfg = JSON.parse(xhr.responseText);
+            if (cfg.gatewayUrl) {
+              localStorage.setItem("bioauth_dashboard_api_base", cfg.gatewayUrl);
+              localStorage.setItem("bioauth_dashboard_api_key", cfg.apiKey || "");
+              localStorage.setItem("bioauth_dashboard_use_mock", "0");
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="charts.js"></script>
     <script src="dashboard.js"></script>

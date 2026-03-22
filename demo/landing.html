@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioAuth — Nuke Console Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0}
+    body{min-height:100vh;background:#0B0D12;color:#e8ecf4;font-family:'Inter',system-ui,sans-serif}
+    .brand{position:fixed;top:0;left:0;padding:1rem 1.25rem;display:flex;align-items:center;gap:0.6rem}
+    .brand-icon{width:36px;height:36px;border-radius:9px;background:rgba(108,142,239,0.15);display:flex;align-items:center;justify-content:center}
+    .brand-icon svg{width:18px;height:18px;color:#6C8EEF}
+    .brand-text{font-weight:700;font-size:0.95rem;color:#6C8EEF}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+    .panel{width:100%;max-width:520px;padding:2.75rem 2.25rem;border-radius:16px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.025);text-align:center}
+    .ecg-icon{width:64px;height:64px;margin:0 auto 1.25rem;border-radius:50%;border:1.5px solid rgba(108,142,239,0.25);display:flex;align-items:center;justify-content:center;color:#6C8EEF}
+    .ecg-icon svg{width:28px;height:28px}
+    h1{font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.5rem}
+    .lede{color:#8b95a8;font-size:0.92rem;line-height:1.55;margin-bottom:1.75rem}
+    .btn{font-family:inherit;font-size:0.95rem;font-weight:600;padding:0.75rem 2rem;border-radius:10px;border:1px solid rgba(108,142,239,0.3);background:rgba(108,142,239,0.12);color:#6C8EEF;cursor:pointer;transition:background .2s}
+    .btn:hover{background:rgba(108,142,239,0.2)}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .sub{font-size:0.8rem;color:#5c6570;margin-top:1.25rem}
+    .sub a{color:#6C8EEF;text-decoration:none}
+    .sub a:hover{text-decoration:underline}
+    .auth-error{display:none;text-align:left;font-size:0.78rem;line-height:1.45;color:#f0a8a8;background:rgba(224,85,85,0.12);border:1px solid rgba(224,85,85,0.25);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;white-space:pre-wrap}
+    .hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M4 7h3l3-4 4 8 3-4h3"/>
+      </svg>
+    </div>
+    <span class="brand-text">BioAuth</span>
+  </div>
+
+  <div class="wrap">
+    <div class="panel" id="panel">
+      <div class="ecg-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3-6 4 12 3-6h4"/>
+        </svg>
+      </div>
+      <h1>Nuke Console</h1>
+      <p class="lede">Demo app: Auth0 sign-in, then live ECG step-up via the BioAuth gateway. Add this page’s URL to Auth0 <strong>Allowed Callback URLs</strong> (e.g. <code style="font-size:0.82rem;color:#6C8EEF">http://127.0.0.1:9000/landing-page</code>).</p>
+      <p id="auth-error" class="auth-error" role="alert"></p>
+      <button type="button" class="btn" id="login-btn" onclick="doLogin()">Sign in</button>
+      <p class="sub"><a href="/">Open console</a> (after you sign in you’ll be sent there automatically)</p>
+    </div>
+    <div class="panel hidden" id="busy">Signing you in…</div>
+  </div>
+
+<script>
+let auth0Client = null;
+let _redirectUri = null;
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('login-btn').disabled = true;
+}
+
+function defaultCallbackUrl(cfg) {
+  if (cfg.redirectUri && String(cfg.redirectUri).trim()) return String(cfg.redirectUri).trim();
+  return window.location.origin + '/landing-page';
+}
+
+async function initAuth0() {
+  let cfg;
+  try {
+    cfg = await fetch('/auth-config').then((r) => r.json());
+  } catch {
+    showAuthError('Could not load /auth-config. Is the demo server running?');
+    return;
+  }
+  if (!cfg.configured) {
+    showAuthError('Set AUTH0_DOMAIN and AUTH0_CLIENT_ID in .env (see .env.example), then restart uvicorn.');
+    return;
+  }
+
+  _redirectUri = defaultCallbackUrl(cfg);
+  try {
+    auth0Client = await auth0.createAuth0Client({
+      domain: cfg.domain,
+      clientId: cfg.clientId,
+      authorizationParams: { redirect_uri: _redirectUri },
+      cacheLocation: 'localstorage',
+    });
+  } catch (e) {
+    showAuthError('Auth0 could not start: ' + (e && e.message ? e.message : String(e)));
+    return;
+  }
+
+  if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
+    document.getElementById('panel').classList.add('hidden');
+    document.getElementById('busy').classList.remove('hidden');
+    try {
+      await auth0Client.handleRedirectCallback();
+      window.history.replaceState({}, document.title, '/landing-page');
+    } catch (e) {
+      document.getElementById('busy').classList.add('hidden');
+      document.getElementById('panel').classList.remove('hidden');
+      showAuthError(
+        (e && e.message ? e.message : String(e)) +
+          '\n\nAllowed Callback URLs must include exactly:\n' + _redirectUri
+      );
+      return;
+    }
+  }
+
+  if (await auth0Client.isAuthenticated()) {
+    try {
+      const cfg = await fetch('/demo-config').then((r) => r.json());
+      if (cfg.gatewayUrl) {
+        localStorage.setItem('bioauth_dashboard_api_base', cfg.gatewayUrl);
+        localStorage.setItem('bioauth_dashboard_api_key', cfg.apiKey || '');
+        localStorage.setItem('bioauth_dashboard_use_mock', '0');
+      }
+    } catch (_) {}
+    window.location.replace('/');
+    return;
+  }
+
+  document.getElementById('busy').classList.add('hidden');
+}
+
+async function doLogin() {
+  await auth0Client.loginWithRedirect();
+}
+
+initAuth0();
+</script>
+</body>
+</html>

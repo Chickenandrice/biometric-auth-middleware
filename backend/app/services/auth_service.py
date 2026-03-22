@@ -36,6 +36,9 @@ class AuthService:
         # ── Check enrollment ──
         user = await crud.get_user(db, request.user_id)
         if not user or not user.enrolled:
+            await self._log_decision(
+                db, request, "deny", 0.0, ["NOT_ENROLLED"],
+            )
             return AuthorizeResponse(
                 decision="deny",
                 confidence=0.0,
@@ -44,6 +47,9 @@ class AuthService:
 
         enrolled_embedding = vector_store.get_embedding(request.user_id)
         if not enrolled_embedding:
+            await self._log_decision(
+                db, request, "deny", 0.0, ["NO_TEMPLATE"],
+            )
             return AuthorizeResponse(
                 decision="deny",
                 confidence=0.0,
@@ -66,6 +72,9 @@ class AuthService:
             )
         except Exception as exc:
             logger.error("Transport error: %s", exc)
+            await self._log_decision(
+                db, request, "step_up", 0.0, ["TRANSPORT_ERROR"],
+            )
             return AuthorizeResponse(
                 decision="step_up",
                 confidence=0.0,
@@ -144,6 +153,9 @@ class AuthService:
             )
 
         if payload.user_id != request.user_id:
+            await self._log_decision(
+                db, request, "deny", 0.0, ["USER_MISMATCH"],
+            )
             return AuthorizeResponse(
                 decision="deny",
                 confidence=0.0,
@@ -152,6 +164,9 @@ class AuthService:
 
         user = await crud.get_user(db, request.user_id)
         if not user or not user.enrolled:
+            await self._log_decision(
+                db, request, "deny", 0.0, ["NOT_ENROLLED"],
+            )
             return AuthorizeResponse(
                 decision="deny",
                 confidence=0.0,
@@ -160,6 +175,9 @@ class AuthService:
 
         enrolled_embedding = vector_store.get_embedding(request.user_id)
         if not enrolled_embedding:
+            await self._log_decision(
+                db, request, "deny", 0.0, ["NO_TEMPLATE"],
+            )
             return AuthorizeResponse(
                 decision="deny",
                 confidence=0.0,

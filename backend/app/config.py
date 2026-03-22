@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -29,7 +29,15 @@ class Settings(BaseSettings):
     # Enrollment
     enrollment_samples: int = 3
 
-    model_config = {"env_prefix": "BIOAUTH_", "env_file": ".env"}
+    # Optional — same .env as demo; gateway does not use these (demo reads AUTH0_* via its own loader)
+    auth0_domain: str | None = None
+    auth0_client_id: str | None = None
+
+    model_config = SettingsConfigDict(
+        env_prefix="BIOAUTH_",
+        env_file=".env",
+        extra="ignore",
+    )
 
 
 settings = Settings()

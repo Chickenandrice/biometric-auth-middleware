@@ -1,8 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.app.config import settings
 from backend.app.db.session import init_db, async_session
@@ -11,6 +14,9 @@ from backend.app.api import authorize, enroll, users, logs, status, relay
 
 logging.basicConfig(level=logging.DEBUG if settings.debug else logging.INFO)
 logger = logging.getLogger(__name__)
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_DASHBOARD_DIR = _REPO_ROOT / "frontend" / "dashboard"
 
 
 async def _auto_enroll_operator():
@@ -47,6 +53,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/")
+async def root():
+    """Serve the dashboard UI; API remains at `/health`, `/users`, `/docs`, etc."""
+    return RedirectResponse(url="/dashboard/", status_code=307)
+
+
 # Register routes
 app.include_router(authorize.router)
 app.include_router(enroll.router)
@@ -54,3 +67,12 @@ app.include_router(users.router)
 app.include_router(logs.router)
 app.include_router(status.router)
 app.include_router(relay.router)
+
+if _DASHBOARD_DIR.is_dir():
+    app.mount(
+        "/dashboard",
+        StaticFiles(directory=str(_DASHBOARD_DIR), html=True),
+        name="dashboard",
+    )
+else:
+    logger.warning("Dashboard not mounted: missing directory %s", _DASHBOARD_DIR)

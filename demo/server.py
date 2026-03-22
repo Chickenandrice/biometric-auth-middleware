@@ -26,12 +26,20 @@ import jwt as pyjwt
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from bioauth.client import BioAuthClient
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_DASHBOARD_DIR = _REPO_ROOT / "frontend" / "dashboard"
+
+# Same gateway the dashboard uses — override for remote gateways
+GATEWAY_URL = os.getenv("BIOAUTH_GATEWAY_URL", "http://localhost:8000").rstrip("/")
+GATEWAY_API_KEY = os.getenv("BIOAUTH_GATEWAY_API_KEY", "dev-api-key-001")
 
 app = FastAPI(title="Nuke Console")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-bioauth = BioAuthClient(base_url="http://localhost:8000", api_key="dev-api-key-001")
+bioauth = BioAuthClient(base_url=GATEWAY_URL, api_key=GATEWAY_API_KEY)
 
 # Auth0 config
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN", "YOUR_AUTH0_DOMAIN")
@@ -82,9 +90,33 @@ async def index():
     return FileResponse(Path(__file__).parent / "index.html")
 
 
+@app.get("/landing-page")
+async def landing_page():
+    return FileResponse(Path(__file__).parent / "landing.html")
+
+
+def _auth0_configured() -> bool:
+    d = os.getenv("AUTH0_DOMAIN", "")
+    c = os.getenv("AUTH0_CLIENT_ID", "")
+    return bool(d and c and not d.startswith("YOUR_") and not c.startswith("YOUR_"))
+
+
 @app.get("/auth-config")
 async def auth_config():
-    return {"domain": AUTH0_DOMAIN, "clientId": os.getenv("AUTH0_CLIENT_ID", "YOUR_AUTH0_CLIENT_ID")}
+    """SPA reads domain/clientId; redirectUri overrides browser origin when set (must match Auth0 exactly)."""
+    redirect = os.getenv("AUTH0_REDIRECT_URI", "").strip() or None
+    return {
+        "domain": AUTH0_DOMAIN,
+        "clientId": os.getenv("AUTH0_CLIENT_ID", "YOUR_AUTH0_CLIENT_ID"),
+        "configured": _auth0_configured(),
+        "redirectUri": redirect,
+    }
+
+
+@app.get("/demo-config")
+async def demo_config():
+    """Browser writes these to dashboard localStorage (same origin as this demo on :9000)."""
+    return {"gatewayUrl": GATEWAY_URL, "apiKey": GATEWAY_API_KEY}
 
 
 @app.post("/launch")
@@ -115,3 +147,11 @@ async def launch(request: Request):
         "codes": None,
         "bioauth": result,
     }
+
+
+if _DASHBOARD_DIR.is_dir():
+    app.mount(
+        "/dashboard",
+        StaticFiles(directory=str(_DASHBOARD_DIR), html=True),
+        name="dashboard",
+    )

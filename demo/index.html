@@ -82,6 +82,7 @@
     .login-card .ecg-icon svg{width:30px;height:30px}
     .login-card h1{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
     .login-card .subtitle{color:#8b95a8;font-size:0.88rem;margin-bottom:1.25rem}
+    .auth-error{display:none;text-align:left;font-size:0.78rem;line-height:1.45;color:#f0a8a8;background:rgba(224,85,85,0.12);border:1px solid rgba(224,85,85,0.25);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;white-space:pre-wrap}
 
     /* User badge */
     .user-badge{position:fixed;top:0;right:0;padding:1rem 1.25rem;display:flex;align-items:center;gap:0.6rem}
@@ -89,6 +90,8 @@
     .user-badge .user-name{font-size:0.8rem;color:#8b95a8;font-weight:500}
     .user-badge .logout-btn{font-family:inherit;font-size:0.72rem;font-weight:600;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#8b95a8;cursor:pointer;transition:all .2s}
     .user-badge .logout-btn:hover{border-color:rgba(224,85,85,0.3);color:#E05555}
+    .user-badge .dashboard-link{font-size:0.78rem;font-weight:600;color:#6C8EEF;text-decoration:none;margin-right:0.35rem}
+    .user-badge .dashboard-link:hover{text-decoration:underline}
 
     .hidden-view{display:none}
   </style>
@@ -107,6 +110,7 @@
   <div class="user-badge hidden-view" id="user-badge">
     <img id="user-avatar" src="" alt="">
     <span class="user-name" id="user-name"></span>
+    <a class="dashboard-link" href="/dashboard/" target="_blank" rel="noopener">Dashboard</a>
     <button class="logout-btn" onclick="doLogout()">Log out</button>
   </div>
 
@@ -120,6 +124,7 @@
       </div>
       <h1>Nuclear Launch Console</h1>
       <p class="subtitle">Sign in to access the console</p>
+      <p id="auth-error" class="auth-error" role="alert"></p>
       <button class="btn" id="login-btn" onclick="doLogin()">Sign In</button>
     </div>
   </div>
@@ -154,19 +159,64 @@
 /* ── Auth0 Config ── */
 let auth0Client = null;
 let accessToken = null;
+let _redirectUri = null;
+
+function showAuthError(msg) {
+  const el = $('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  $('login-view').classList.remove('hidden-view');
+  $('login-btn').disabled = true;
+}
 
 async function initAuth0() {
-  const cfg = await fetch('/auth-config').then(r => r.json());
-  auth0Client = await auth0.createAuth0Client({
-    domain: cfg.domain,
-    clientId: cfg.clientId,
-    authorizationParams: { redirect_uri: window.location.origin }
-  });
+  let cfg;
+  try {
+    const r = await fetch('/auth-config');
+    cfg = await r.json();
+  } catch {
+    showAuthError('Could not load /auth-config. Is the demo server running on this port?');
+    return;
+  }
+  if (!cfg.configured) {
+    showAuthError(
+      'Set AUTH0_DOMAIN and AUTH0_CLIENT_ID in the project .env (see .env.example), then restart the demo server.'
+    );
+    return;
+  }
+  // OAuth returns here via /landing-page (single callback URL). Optional AUTH0_REDIRECT_URI in .env overrides.
+  _redirectUri =
+    (cfg.redirectUri && String(cfg.redirectUri).trim()) || window.location.origin + '/landing-page';
+  const redirectUri = _redirectUri;
+  try {
+    auth0Client = await auth0.createAuth0Client({
+      domain: cfg.domain,
+      clientId: cfg.clientId,
+      authorizationParams: { redirect_uri: redirectUri },
+      cacheLocation: 'localstorage',
+    });
+  } catch (e) {
+    showAuthError('Auth0 could not start: ' + (e && e.message ? e.message : String(e)));
+    return;
+  }
 
-  // Handle redirect callback
   if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
-    await auth0Client.handleRedirectCallback();
-    window.history.replaceState({}, document.title, window.location.pathname);
+    try {
+      await auth0Client.handleRedirectCallback();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) {
+      showAuthError(
+        'Auth0 redirect failed: ' + (e && e.message ? e.message : String(e)) +
+          '\n\nIn Auth0 Dashboard → Applications → your SPA → Settings:\n' +
+          '• Application type: Single Page Application\n' +
+          '• Allowed Callback URLs must include this exact string: ' + redirectUri +
+          '\n• Allowed Logout URLs: same URL (or add each variant you use)\n' +
+          '• Allowed Web Origins: ' + window.location.origin +
+          '\n\nIf Auth0 still rejects redirect_uri, set AUTH0_REDIRECT_URI in .env to the same value you paste into Allowed Callback URLs, then restart uvicorn.\n' +
+          '127.0.0.1 and localhost are different; trailing slash vs no slash must match.'
+      );
+      return;
+    }
   }
 
   const loggedIn = await auth0Client.isAuthenticated();
@@ -182,12 +232,27 @@ async function doLogin() {
 }
 
 async function doLogout() {
-  auth0Client.logout({ logoutParams: { returnTo: window.location.origin } });
+  auth0Client.logout({ logoutParams: { returnTo: _redirectUri || window.location.origin } });
+}
+
+async function syncDashboardPrefs() {
+  try {
+    const cfg = await fetch('/demo-config').then((r) => r.json());
+    if (cfg.gatewayUrl) {
+      localStorage.setItem('bioauth_dashboard_api_base', cfg.gatewayUrl);
+      localStorage.setItem('bioauth_dashboard_api_key', cfg.apiKey || '');
+      localStorage.setItem('bioauth_dashboard_use_mock', '0');
+    }
+  } catch (_) {}
 }
 
 async function showConsole() {
   const user = await auth0Client.getUser();
-  accessToken = await auth0Client.getTokenSilently();
+  // Without an API audience, Auth0 often returns an opaque access token; the demo API expects a JWT (RS256).
+  const tok = await auth0Client.getTokenSilently({ detailedResponse: true });
+  accessToken = tok.id_token || tok.access_token;
+
+  await syncDashboardPrefs();
 
   // Show user badge
   const badge = $('user-badge');
