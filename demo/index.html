@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BioAuth — Nuke Console</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
   <style>
     *{box-sizing:border-box;margin:0}
     body{min-height:100vh;background:#0B0D12;color:#e8ecf4;font-family:'Inter',system-ui,sans-serif}
@@ -74,6 +75,22 @@
     .meta code{font-family:'JetBrains Mono',monospace;font-size:0.74rem;color:#6C8EEF}
 
     @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+    /* Auth0 login card */
+    .login-card{width:100%;max-width:480px;padding:3rem 2.5rem;border-radius:16px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.025);text-align:center}
+    .login-card .ecg-icon{width:72px;height:72px;margin:0 auto 1.5rem;border-radius:50%;border:1.5px solid rgba(108,142,239,0.25);display:flex;align-items:center;justify-content:center;color:#6C8EEF}
+    .login-card .ecg-icon svg{width:30px;height:30px}
+    .login-card h1{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
+    .login-card .subtitle{color:#8b95a8;font-size:0.88rem;margin-bottom:1.25rem}
+
+    /* User badge */
+    .user-badge{position:fixed;top:0;right:0;padding:1rem 1.25rem;display:flex;align-items:center;gap:0.6rem}
+    .user-badge img{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(108,142,239,0.3)}
+    .user-badge .user-name{font-size:0.8rem;color:#8b95a8;font-weight:500}
+    .user-badge .logout-btn{font-family:inherit;font-size:0.72rem;font-weight:600;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#8b95a8;cursor:pointer;transition:all .2s}
+    .user-badge .logout-btn:hover{border-color:rgba(224,85,85,0.3);color:#E05555}
+
+    .hidden-view{display:none}
   </style>
 </head>
 <body>
@@ -86,7 +103,29 @@
     <span class="brand-text">BioAuth</span>
   </div>
 
-  <div class="wrap">
+  <!-- User badge (shown when logged in) -->
+  <div class="user-badge hidden-view" id="user-badge">
+    <img id="user-avatar" src="" alt="">
+    <span class="user-name" id="user-name"></span>
+    <button class="logout-btn" onclick="doLogout()">Log out</button>
+  </div>
+
+  <!-- Login view -->
+  <div class="wrap hidden-view" id="login-view">
+    <div class="login-card">
+      <div class="ecg-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3-6 4 12 3-6h4"/>
+        </svg>
+      </div>
+      <h1>Nuclear Launch Console</h1>
+      <p class="subtitle">Sign in to access the console</p>
+      <button class="btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- Console view (shown after login) -->
+  <div class="wrap hidden-view" id="console-view">
     <div class="card">
       <div class="ecg-icon" id="icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -112,6 +151,59 @@
   </div>
 
 <script>
+/* ── Auth0 Config ── */
+let auth0Client = null;
+let accessToken = null;
+
+async function initAuth0() {
+  const cfg = await fetch('/auth-config').then(r => r.json());
+  auth0Client = await auth0.createAuth0Client({
+    domain: cfg.domain,
+    clientId: cfg.clientId,
+    authorizationParams: { redirect_uri: window.location.origin }
+  });
+
+  // Handle redirect callback
+  if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
+    await auth0Client.handleRedirectCallback();
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  const loggedIn = await auth0Client.isAuthenticated();
+  if (loggedIn) {
+    await showConsole();
+  } else {
+    $('login-view').classList.remove('hidden-view');
+  }
+}
+
+async function doLogin() {
+  await auth0Client.loginWithRedirect();
+}
+
+async function doLogout() {
+  auth0Client.logout({ logoutParams: { returnTo: window.location.origin } });
+}
+
+async function showConsole() {
+  const user = await auth0Client.getUser();
+  accessToken = await auth0Client.getTokenSilently();
+
+  // Show user badge
+  const badge = $('user-badge');
+  $('user-avatar').src = user.picture || '';
+  $('user-name').textContent = user.name || user.email || '';
+  badge.classList.remove('hidden-view');
+
+  // Swap views
+  $('login-view').classList.add('hidden-view');
+  $('console-view').classList.remove('hidden-view');
+}
+
+initAuth0();
+</script>
+
+<script>
 const LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-6 4 12 3-6h4"/></svg>'
 const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
 const X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
@@ -131,7 +223,7 @@ async function launch(){
   }
 
   try{
-    const res=await fetch('/launch',{method:'POST'})
+    const res=await fetch('/launch',{method:'POST',headers:{'Authorization':'Bearer '+accessToken}})
     if(!res.ok) throw new Error(res.status)
     const d=await res.json(),b=d.bioauth
     bars.className='bars'
